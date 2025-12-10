@@ -1,52 +1,34 @@
-import pandas as pd
-import matplotlib.pyplot as plt
+from analisis import analizar_passwords, analizar_emails, analizar_phones, analizar_estados, analizar_fechas
+from datos import cargar_y_limpiar
 
-# ======== 1. CARGAR ARCHIVO ========
-print("📥 Cargando archivo limpio...")
-df = pd.read_csv("clean_data.csv", sep=";")  # Ajusta el nombre si tu archivo se llama distinto
-print("✔ Datos cargados correctamente.")
-print(f"📊 Registros: {len(df)}")
+df = cargar_y_limpiar("data_clientes.csv")
 
-# ======== 2. CONFIG ESTILO ROSADO ========
-pink = "#ff4fa3"
+result_pass = analizar_passwords(df)
+result_email = analizar_emails(df)
+result_phone = analizar_phones(df)
+result_state = analizar_estados(df)
+result_dates = analizar_fechas(df)
 
-plt.rcParams["text.color"] = pink
-plt.rcParams["axes.labelcolor"] = pink
-plt.rcParams["xtick.color"] = pink
-plt.rcParams["ytick.color"] = pink
-plt.rcParams["axes.edgecolor"] = pink
-plt.rcParams["font.weight"] = "bold"
-plt.rcParams["axes.titleweight"] = "bold"
-plt.rcParams["axes.labelweight"] = "bold"
+top_password = list(result_pass["passwords_repetidas"].keys())[0]
+top_domain = list(result_email["top_dominios"].keys())[0]
+top_phone = list(result_phone["telefonos_repetidos"].keys())[0]
+top_state = max(result_state["actividad_por_estado"], key=result_state["actividad_por_estado"].get)
+dias_consecutivos = len(result_dates["actividad_por_dia"])
 
-# ======== 3. PROCESAR CAMPOS ========
-df["email_domain"] = df["email"].str.split("@").str[1]
+html = f"""
+<h1>Dashboard de Fraude</h1>
 
-password_counts = df["password"].value_counts().head(10)
-state_counts = df["state"].value_counts().head(10)
-phone_counts = df["phones"].value_counts().head(10)
-domain_counts = df["email_domain"].value_counts().head(10)
+<p><b>Contraseña más repetida:</b> {top_password}</p>
+<p><b>Dominio más común:</b> {top_domain}</p>
+<p><b>Teléfono más repetido:</b> {top_phone}</p>
+<p><b>Estado con más actividad:</b> {top_state}</p>
+<p><b>Días consecutivos analizados:</b> {dias_consecutivos}</p>
 
-# ======== 4. DASHBOARD ========
-fig, axes = plt.subplots(2, 2, figsize=(14, 10))
-fig.suptitle("Dashboard de Patrones Fraudulentos", fontsize=18, fontweight="bold", color=pink)
+<h2>Patrón Detectado:</h2>
+<p>Clientes del mismo estado + misma contraseña + mismo teléfono = dominio OUTLOOK</p>
+"""
 
-# 1. Passwords repetidas
-axes[0, 0].bar(password_counts.index.astype(str), password_counts.values)
-axes[0, 0].set_title("Passwords más repetidas")
-axes[0, 0].set_ylabel("Repeticiones")
+with open("dashboard.html", "w") as f:
+    f.write(html)
 
-# 2. Estados
-axes[0, 1].bar(state_counts.index.astype(str), state_counts.values)
-axes[0, 1].set_title("Estados con más cuentas")
-
-# 3. Teléfonos
-axes[1, 0].bar(phone_counts.index.astype(str), phone_counts.values)
-axes[1, 0].set_title("Teléfonos más repetidos")
-
-# 4. Dominios email
-axes[1, 1].bar(domain_counts.index.astype(str), domain_counts.values)
-axes[1, 1].set_title("Dominios de email más comunes")
-
-plt.tight_layout()
-plt.show()
+print("Dashboard generado: dashboard.html")

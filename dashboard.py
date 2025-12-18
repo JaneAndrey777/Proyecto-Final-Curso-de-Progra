@@ -1,34 +1,62 @@
-from analisis import analizar_passwords, analizar_emails, analizar_phones, analizar_estados, analizar_fechas
+import pandas as pd
+import matplotlib.pyplot as plt
 from datos import cargar_y_limpiar
+
+#Configuración visual
+COLOR = "#FF0080"
+plt.rcParams["font.size"] = 11
+plt.rcParams["font.weight"] = "bold"
 
 df = cargar_y_limpiar("data_clientes.csv")
 
-result_pass = analizar_passwords(df)
-result_email = analizar_emails(df)
-result_phone = analizar_phones(df)
-result_state = analizar_estados(df)
-result_dates = analizar_fechas(df)
+# VALIDACIONES BÁSICAS
+columnas_necesarias = ["password", "phones", "state", "email"]
 
-top_password = list(result_pass["passwords_repetidas"].keys())[0]
-top_domain = list(result_email["top_dominios"].keys())[0]
-top_phone = list(result_phone["telefonos_repetidos"].keys())[0]
-top_state = max(result_state["actividad_por_estado"], key=result_state["actividad_por_estado"].get)
-dias_consecutivos = len(result_dates["actividad_por_dia"])
+for col in columnas_necesarias:
+    if col not in df.columns:
+        raise ValueError(f"Falta la columna requerida: {col}")
 
-html = f"""
-<h1>Dashboard de Fraude</h1>
+# PREPARACIÓN DE DATOS
+df["email_domain"] = df["email"].astype(str).str.split("@").str[-1]
 
-<p><b>Contraseña más repetida:</b> {top_password}</p>
-<p><b>Dominio más común:</b> {top_domain}</p>
-<p><b>Teléfono más repetido:</b> {top_phone}</p>
-<p><b>Estado con más actividad:</b> {top_state}</p>
-<p><b>Días consecutivos analizados:</b> {dias_consecutivos}</p>
+passwords_rep = df["password"].value_counts().head(5)
+phones_rep = df["phones"].value_counts().head(5)
+states_rep = df["state"].value_counts().head(5)
+domains_rep = df["email_domain"].value_counts().head(5)
 
-<h2>Patrón Detectado:</h2>
-<p>Clientes del mismo estado + misma contraseña + mismo teléfono = dominio OUTLOOK</p>
-"""
+# DASHBOARD
+fig, axs = plt.subplots(2, 2, figsize=(14, 10))
+fig.suptitle(
+    "Fraud Pattern Dashboard\nShared Credentials & Locations",
+    fontsize=18,
+    fontweight="bold",
+    color=COLOR
+)
 
-with open("dashboard.html", "w") as f:
-    f.write(html)
+# -------- Passwords --------
+axs[0, 0].bar(passwords_rep.index, passwords_rep.values, color=COLOR)
+axs[0, 0].set_title("Most Shared Passwords", fontsize=14, color=COLOR)
+axs[0, 0].tick_params(axis="x", rotation=30)
 
-print("Dashboard generado: dashboard.html")
+# -------- Phones --------
+axs[0, 1].bar(phones_rep.index, phones_rep.values, color=COLOR)
+axs[0, 1].set_title("Shared Phone Numbers", fontsize=14, color=COLOR)
+axs[0, 1].tick_params(axis="x", rotation=30)
+
+# -------- States --------
+axs[1, 0].bar(states_rep.index.str.upper(), states_rep.values, color=COLOR)
+axs[1, 0].set_title("Accounts by State", fontsize=14, color=COLOR)
+
+# -------- Email Domains --------
+axs[1, 1].bar(domains_rep.index, domains_rep.values, color=COLOR)
+axs[1, 1].set_title("Email Domains Used", fontsize=14, color=COLOR)
+
+# ======================
+# AJUSTES FINALES
+# ======================
+for ax in axs.flat:
+    ax.grid(axis="y", linestyle="--", alpha=0.5)
+    ax.set_ylabel("Number of Accounts", fontweight="bold")
+
+plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+plt.show()

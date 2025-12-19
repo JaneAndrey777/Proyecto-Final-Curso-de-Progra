@@ -15,7 +15,6 @@ def cargar_y_limpiar(ruta_archivo):
 
         print("✔ Archivo cargado correctamente.")
 
-        # -----------------------------------------------------------
         # 1. LIMPIEZA GENERAL
 
         # Normalizar nombres de columnas

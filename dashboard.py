@@ -51,9 +51,7 @@ axs[1, 0].set_title("Accounts by State", fontsize=14, color=COLOR)
 axs[1, 1].bar(domains_rep.index, domains_rep.values, color=COLOR)
 axs[1, 1].set_title("Email Domains Used", fontsize=14, color=COLOR)
 
-# ======================
 # AJUSTES FINALES
-# ======================
 for ax in axs.flat:
     ax.grid(axis="y", linestyle="--", alpha=0.5)
     ax.set_ylabel("Number of Accounts", fontweight="bold")
